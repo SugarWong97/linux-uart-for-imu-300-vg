@@ -221,7 +221,7 @@ int serial_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int pari
 
     options.c_cc[VTIME] = 1;    /* 读取一个字符等待1*(1/10)s */
 
-    options.c_cc[VMIN] = 32;    /* 读取字符的最少个数为xx，单位是字节 */
+    options.c_cc[VMIN] = 48;    /* 读取字符的最少个数为xx，单位是字节 */
 
     tcflush(fd,TCIFLUSH);
 
