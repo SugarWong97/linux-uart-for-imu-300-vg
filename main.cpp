@@ -81,6 +81,7 @@ unsigned char g_dev_addr = 0x00;
 void set_dev_addr(unsigned char addr)
 {
     g_dev_addr = addr;
+    printf("Dev Addr now is [%02x]\n", addr);
 }
 
 unsigned char get_dev_addr(void)
@@ -132,9 +133,8 @@ static int _check_imx300_vg_cmd(const unsigned char *cmd_buff, unsigned char cmd
 
 #if 1
     // 5. 获取数据域
-    //payload_zone = &cmd_buff[ cmd_buff[PACKAGE_INDEX_2_LEN] - 1];
     //for( i = 0; i <  cmd_buff[PACKAGE_INDEX_2_LEN] - PACKAGE_INDEX_4_DATA; i++)
-    payload_zone = (unsigned char *)&cmd_buff[ data_len - 1];
+    payload_zone = (unsigned char *)&cmd_buff[ PACKAGE_INDEX_4_DATA];
     for( i = 0; i <  data_len - PACKAGE_INDEX_4_DATA; i++)
     {
         printf("DATA [%d] is [%02x]\n", i, payload_zone[i]);
@@ -230,7 +230,7 @@ int _gen_imx300_vg_cmd(unsigned char *cmd_buff, unsigned char max_send_len,
     }
     printf("\n");
     */
-    printf("%d\n", cmd_buff[PACKAGE_INDEX_2_LEN] + 1);
+    //printf("%d\n", cmd_buff[PACKAGE_INDEX_2_LEN] + 1);
     return cmd_buff[PACKAGE_INDEX_2_LEN] + 1;
 }
 
@@ -284,8 +284,9 @@ int imx300_vg_cmd_send_and_recv(int uart_fd,
     // 3. 截取数据域进行返回
     data_len = recv_buff[PACKAGE_INDEX_2_LEN];
 
-    payload_zone = &recv_buff[ data_len - 1];
+    payload_zone = &recv_buff[PACKAGE_INDEX_4_DATA];
     payload_len  = data_len - PACKAGE_INDEX_4_DATA;
+    printf("payload_len is %d\n", payload_len);
     for( i = 0; i < payload_len; i++)
     {
         if(max_recv_len == i)
@@ -675,7 +676,7 @@ int imx300_vg_uart_probe(char * uart_dev_path, int speed)
 {
     int uart_fd = -1;
 
-    int speeds [] = {4800, 9600, 19200, 115200, 38400, 57600, 460800,2400};
+    int speeds [] = {9600, 19200, 115200, 38400, 57600, 460800,2400, 4800};
 
     int ret;
     int speed_cur = -1;
@@ -733,24 +734,7 @@ int uart_demo(char * uart_dev_path, int speed)
         printf("Dev Not Found\n");
         return -1;
     }
-
-    // 接收uart
-    unsigned char recv_buff[256];
-    int timeout_s = 0;
-    int timeout_us = 3000;
-    int len;
-
-    printf("Start Echo.\n");
-    while(1)
-    {
-        len = serial_recv(uart_fd, recv_buff, sizeof(recv_buff), timeout_s, timeout_us);
-        if (len <= 0)
-        {
-            continue;
-        }
-        // 将收到的数据发送出去
-        serial_send(uart_fd, recv_buff, len);
-    }
+    imx300_vg_get_g_value(uart_fd);
 
     return 0;
 }
@@ -775,7 +759,7 @@ int main(int argc, char * argv[])
 {
     int speed = 9600;
 
-    if(argc >= 2)
+    if(argc >= 3)
     {
         speed = atoi(argv[2]);
     }
