@@ -592,34 +592,6 @@ err:
     return -1;
 }
 
-int imx300_vg_read_all_data(int uart_fd, unsigned char *recv_payload, int max_payload_len)
-{
-    int recv_payload_len;
-
-    if(recv_payload == NULL)
-    {
-        goto err;
-    }
-
-    recv_payload_len = imx300_vg_cmd_send_and_recv(uart_fd,
-            CMD_SEND_READ_ALL_DATA, NULL,   0,
-            CMD_RECV_READ_ALL_DATA, recv_payload, sizeof(recv_payload));
-    if(recv_payload_len <= 0)
-    {
-        goto err;
-    }
-    //if(recv_payload[0] != 0x01)
-    //{
-    //    printf("DATA is [%02x]\n", recv_payload[0]);
-    //    goto err;
-    //}
-
-    return 0;
-
-err:
-    return -1;
-}
-
 int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data)
 {
     unsigned char recv_len;
@@ -654,6 +626,7 @@ int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data)
         //printf("DATA [%d] is [%02x]\n", i, recv_payload[i]);
         printf("0x%02x, ", recv_buff[i]);
     }
+    printf("\n");
 
     // 3. 验证返回的数据对不对
     if(_check_imx300_vg_cmd(recv_buff, recv_cmd_code) != 0)
@@ -738,69 +711,98 @@ int imx300_vg_cal_recv_data(unsigned char * buffer, struct imu300_vg_data *vg_da
 {
     //unsigned char buffer[48]={
     //    0x77,0x2F,0x00,0x59,0x10,0x00,0x60,0x10,0x03,0x06,0x00,0x00,0x00,
-    //    0x10,0x01,0x07,0x10,0x05,0x43,0x01,0x01,0x54,
-    //    0x10,0x00,0x13,0x10,0x00,0x04,0x00,0x00,0x09, 0x10,0x87,0x06,0x35,0x00,0x01,0x76,0x91,0x00,0x02,0x06,0x94,0x00,0x49,0x11,0x75,0x5C
+    //                        0x10,0x01,0x07,0x10,0x05,0x43,0x01,0x01,0x54,
+    //                        0x10,0x00,0x13,0x10,0x00,0x04,0x00,0x00,0x09,
+    //                        0x10,0x87,0x06,0x35,0x00,0x01,0x76,0x91,0x00,0x02,0x06,0x94,0x00,0x49,0x11,0x75,0x5C
     //};
     char hexstr[97] = {0};
+    char *p_hexstr = NULL;
 
     //hexstr[96] = '\0';
     //msmeset(hexstr, 0, sizeof(a));
     to_hex_str(buffer, 48, hexstr);
+    printf("To hex [%s]\n ", hexstr);
 
     //rpy
     double yaw;
-    yaw = (hexstr[9] - '0') * 100 + (hexstr[10] - '0') * 10 + (hexstr[11] - '0') + (hexstr[12] - '0') * 0.1 + (hexstr[13] - '0') * 0.01;
-    yaw = (hexstr[8] == '1') ? (-1 * yaw) : yaw;
+    p_hexstr = &hexstr[8];
+    yaw = (p_hexstr[1] - '0') * 100 + (p_hexstr[2] - '0') * 10 + (p_hexstr[3] - '0') + (p_hexstr[4] - '0') * 0.1 + (p_hexstr[5] - '0') * 0.01;
+    yaw = (p_hexstr[0] == '1') ? (-1 * yaw) : yaw;
 
-    double pitch = (hexstr[15] - '0') * 100 + (hexstr[16] - '0') * 10 + (hexstr[17] - '0') + (hexstr[18] - '0') * 0.1 + (hexstr[19] - '0') * 0.01;
-    pitch = (hexstr[14] == '1') ? (-1 * pitch) : pitch;
+    double pitch;
+    p_hexstr = &hexstr[14];
+    pitch = (p_hexstr[1] - '0') * 100 + (p_hexstr[2] - '0') * 10 + (p_hexstr[3] - '0') + (p_hexstr[4] - '0') * 0.1 + (p_hexstr[5] - '0') * 0.01;
+    pitch = (p_hexstr[0] == '1') ? (-1 * pitch) : pitch;
     //cout << pitch << "Centigrade" << endl;
 
-    double roll = (hexstr[21] - '0') * 100 + (hexstr[22] - '0') * 10 + (hexstr[23] - '0') + (hexstr[24] - '0') * 0.1 + (hexstr[25] - '0') * 0.01;
-    roll = (hexstr[20] == '1') ? (-1 * roll) : roll;
+    double roll;
+    p_hexstr = &hexstr[20];
+    roll = (p_hexstr[1] - '0') * 100 + (p_hexstr[2] - '0') * 10 + (p_hexstr[3] - '0') + (p_hexstr[4] - '0') * 0.1 + (p_hexstr[5] - '0') * 0.01;
+    roll = (p_hexstr[0] == '1') ? (-1 * roll) : roll;
     //cout << roll << "Centigrade" << endl;
 
     //x_y_z_acceleratio
-    double x_acc = (hexstr[27] - '0') + (hexstr[28] - '0') * 0.1 + (hexstr[29] - '0') * 0.01 + (hexstr[30] - '0') * 0.001 + (hexstr[31] - '0') * 0.0001;
-    x_acc = (hexstr[26] == '1') ? (-1 * x_acc) : x_acc;
+    double x_acc;
+    p_hexstr = &hexstr[26];
+    x_acc = (p_hexstr[1] - '0') + (p_hexstr[2] - '0') * 0.1 + (p_hexstr[3] - '0') * 0.01 + (p_hexstr[4] - '0') * 0.001 + (p_hexstr[5] - '0') * 0.0001;
+    x_acc = (p_hexstr[0] == '1') ? (-1 * x_acc) : x_acc;
     //cout << x_acc << "g" << endl;
 
-    double y_acc = (hexstr[33] - '0') + (hexstr[34] - '0') * 0.1 + (hexstr[35] - '0') * 0.01 + (hexstr[36] - '0') * 0.001 + (hexstr[37] - '0') * 0.0001;
-    y_acc = (hexstr[32] == '1') ? (-1 * y_acc) : y_acc;
+    double y_acc;
+    p_hexstr = &hexstr[32];
+    y_acc = (p_hexstr[1] - '0') + (p_hexstr[2] - '0') * 0.1 + (p_hexstr[3] - '0') * 0.01 + (p_hexstr[4] - '0') * 0.001 + (p_hexstr[5] - '0') * 0.0001;
+    y_acc = (p_hexstr[0] == '1') ? (-1 * y_acc) : y_acc;
     //cout << y_acc << "g" << endl;
 
-    double z_acc = (hexstr[39] - '0') + (hexstr[40] - '0') * 0.1 + (hexstr[41] - '0') * 0.01 + (hexstr[42] - '0') * 0.001 + (hexstr[43] - '0') * 0.0001;
-    z_acc = (hexstr[38] == '1') ? (-1 * z_acc) : z_acc;
+    double z_acc;
+    p_hexstr = &hexstr[38];
+    z_acc = (p_hexstr[1] - '0') + (p_hexstr[2] - '0') * 0.1 + (p_hexstr[3] - '0') * 0.01 + (p_hexstr[4] - '0') * 0.001 + (p_hexstr[5] - '0') * 0.0001;
+    z_acc = (p_hexstr[0] == '1') ? (-1 * z_acc) : z_acc;
     //cout << z_acc << "g" << endl;
 
     //x_y_z_angular_velocity
-    double x_av = (hexstr[45] - '0') * 100 + (hexstr[46] - '0') * 10 + (hexstr[47] - '0') + (hexstr[48] - '0') * 0.1 + (hexstr[49] - '0') * 0.01;
-    x_av = (hexstr[44] == '1') ? (-1 * x_av) : x_av;
+    double x_av;
+    p_hexstr = &hexstr[44];
+    x_av = (p_hexstr[1] - '0') * 100 + (p_hexstr[2] - '0') * 10 + (p_hexstr[3] - '0') + (p_hexstr[4] - '0') * 0.1 + (p_hexstr[5] - '0') * 0.01;
+    x_av = (p_hexstr[0] == '1') ? (-1 * x_av) : x_av;
     //cout << x_av << "du/s" << endl;
 
-    double y_av = (hexstr[51] - '0') * 100 + (hexstr[52] - '0') * 10 + (hexstr[53] - '0') + (hexstr[54] - '0') * 0.1 + (hexstr[55] - '0') * 0.01;
-    y_av = (hexstr[50] == '1') ? (-1 * y_av) : y_av;
+    double y_av;
+    p_hexstr = &hexstr[50];
+    y_av = (p_hexstr[1] - '0') * 100 + (p_hexstr[2] - '0') * 10 + (p_hexstr[3] - '0') + (p_hexstr[4] - '0') * 0.1 + (p_hexstr[5] - '0') * 0.01;
+    y_av = (p_hexstr[0] == '1') ? (-1 * y_av) : y_av;
     //cout << y_av << "du/s" << endl;
 
-    double z_av = (hexstr[57] - '0') * 100 + (hexstr[58] - '0') * 10 + (hexstr[59] - '0') + (hexstr[60] - '0') * 0.1 + (hexstr[61] - '0') * 0.01;
-    z_av = (hexstr[56] == '1') ? (-1 * z_av) : z_av;
+    double z_av;
+    p_hexstr = &hexstr[56];
+    z_av = (p_hexstr[1] - '0') * 100 + (p_hexstr[2] - '0') * 10 + (p_hexstr[3] - '0') + (p_hexstr[4] - '0') * 0.1 + (p_hexstr[5] - '0') * 0.01;
+    z_av = (p_hexstr[0] == '1') ? (-1 * z_av) : z_av;
     //cout << z_av << "du/s" << endl;
 
+
     //Quar
-    double q1 = (hexstr[63] - '0') + (hexstr[64] - '0') * 0.1 + (hexstr[65] - '0') * 0.01 + (hexstr[66] - '0') * 0.001 + (hexstr[67] - '0') * 0.0001 + (hexstr[68] - '0') * 0.00001 + (hexstr[69] - '0') * 0.000001;
-    q1 = (hexstr[62] == '1') ? (-1 * q1) : q1;
+    double q1;
+    p_hexstr = &hexstr[62];
+    q1 = (p_hexstr[1] - '0') + (p_hexstr[2] - '0') * 0.1 + (p_hexstr[3] - '0') * 0.01 + (p_hexstr[4] - '0') * 0.001 + (p_hexstr[5] - '0') * 0.0001 + (p_hexstr[6] - '0') * 0.00001 + (p_hexstr[7] - '0') * 0.000001;
+    q1 = (p_hexstr[0] == '1') ? (-1 * q1) : q1;
     //cout << q1 << " " << endl;
 
-    double q2 = (hexstr[71] - '0') + (hexstr[72] - '0') * 0.1 + (hexstr[73] - '0') * 0.01 + (hexstr[74] - '0') * 0.001 + (hexstr[75] - '0') * 0.0001 + (hexstr[76] - '0') * 0.00001 + (hexstr[77] - '0') * 0.000001;
-    q2 = (hexstr[70] == '1') ? (-1 * q2) : q2;
+    double q2;
+    p_hexstr = &hexstr[70];
+    q2 = (p_hexstr[1] - '0') + (p_hexstr[2] - '0') * 0.1 + (p_hexstr[3] - '0') * 0.01 + (p_hexstr[4] - '0') * 0.001 + (p_hexstr[5] - '0') * 0.0001 + (p_hexstr[6] - '0') * 0.00001 + (p_hexstr[7] - '0') * 0.000001;
+    q2 = (p_hexstr[0] == '1') ? (-1 * q2) : q2;
     //cout << q2 << " " << endl;
 
-    double q3 = (hexstr[79] - '0') + (hexstr[80] - '0') * 0.1 + (hexstr[81] - '0') * 0.01 + (hexstr[82] - '0') * 0.001 + (hexstr[83] - '0') * 0.0001 + (hexstr[84] - '0') * 0.00001 + (hexstr[85] - '0') * 0.000001;
-    q3 = (hexstr[78] == '1') ? (-1 * q3) : q3;
+    double q3;
+    p_hexstr = &hexstr[78];
+    q3 = (p_hexstr[1] - '0') + (p_hexstr[2] - '0') * 0.1 + (p_hexstr[3] - '0') * 0.01 + (p_hexstr[4] - '0') * 0.001 + (p_hexstr[5] - '0') * 0.0001 + (p_hexstr[6] - '0') * 0.00001 + (p_hexstr[7] - '0') * 0.000001;
+    q3 = (p_hexstr[0] == '1') ? (-1 * q3) : q3;
     //cout << q3 << " " << endl;
 
-    double q4 = (hexstr[87] - '0') + (hexstr[88] - '0') * 0.1 + (hexstr[89] - '0') * 0.01 + (hexstr[90] - '0') * 0.001 + (hexstr[91] - '0') * 0.0001 + (hexstr[92] - '0') * 0.00001 + (hexstr[93] - '0') * 0.000001;
-    q4 = (hexstr[86] == '1') ? (-1 * q4) : q4;
+    double q4;
+    p_hexstr = &hexstr[86];
+    q4 = (p_hexstr[1] - '0') + (p_hexstr[2] - '0') * 0.1 + (p_hexstr[3] - '0') * 0.01 + (p_hexstr[4] - '0') * 0.001 + (p_hexstr[5] - '0') * 0.0001 + (p_hexstr[6] - '0') * 0.00001 + (p_hexstr[7] - '0') * 0.000001;
+    q4 = (p_hexstr[0] == '1') ? (-1 * q4) : q4;
     //cout << q4 << " " << endl;
     if(vg_data)
     {
@@ -821,17 +823,17 @@ int imx300_vg_cal_recv_data(unsigned char * buffer, struct imu300_vg_data *vg_da
         vg_data->q3 = q3;
         vg_data->q4 = q4;
         printf("\n-----\n");
-        printf("Yaw : %f\n", yaw);
+        printf("Yaw : %f \n", yaw);
         printf("Pitch : %f\n", pitch);
         printf("Roll : %f\n", roll);
 
-        printf("Acc x : %f\n", x_acc);
-        printf("Acc y : %f\n", y_acc);
-        printf("Acc z : %f\n", z_acc);
+        printf("Acc x : %f g\n", x_acc);
+        printf("Acc y : %f g\n", y_acc);
+        printf("Acc z : %f g\n", z_acc);
 
-        printf("Av x : %f\n", x_av);
-        printf("Av y : %f\n", y_av);
-        printf("Av z : %f\n", z_av);
+        printf("Av x : %f du/s\n", x_av);
+        printf("Av y : %f du/s\n", y_av);
+        printf("Av z : %f du/s\n", z_av);
 
         printf("Q1 : %f\n", q1);
         printf("Q2 : %f\n", q2);
@@ -842,3 +844,4 @@ int imx300_vg_cal_recv_data(unsigned char * buffer, struct imu300_vg_data *vg_da
 
     return 0;
 }
+
