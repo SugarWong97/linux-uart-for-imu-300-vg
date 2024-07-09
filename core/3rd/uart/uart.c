@@ -11,7 +11,8 @@
 
 #define app_dbgntf
 #ifdef app_dbgntf
-#define app_dbg(mesg, args...) fprintf(stderr, "DEBUG [%s:%d:] " mesg " ", __FILE__, __LINE__, ##args)
+//#define app_dbg(mesg, args...) fprintf(stderr, "DEBUG [%s:%d:] " mesg " ", __FILE__, __LINE__, ##args)
+#define app_dbg(mesg, args...) fprintf(stderr, "DEBUG : " mesg " ",  ##args)
 #define depri(mesg, args...) fprintf(stderr, "" mesg " ", ##args)
 #else
 #define app_dbg(mesg, args...)
@@ -28,12 +29,12 @@ int serial_open(char* ttyX)
     //  O_NDELAY ：这个程序不关心DCD信号线所处的状态,端口的另一端是否激活或者停止。如果用户不指定了这个标志，则进程将会一直处在睡眠状态，直到DCD信号线被激活。
 #if 1
     fd = open(ttyX, O_RDWR | O_NOCTTY | O_NDELAY);
-    printf("Warning: 'open' with 'O_RDWR | O_NOCTTY | O_NDELAY'\n");
+    //printf("Warning: 'open' with 'O_RDWR | O_NOCTTY | O_NDELAY'\n");
 #else
     fd = open(ttyX, O_RDWR | O_NOCTTY);
-    printf("Warning: 'open' with 'O_RDWR | O_NOCTTY'\n");
+    //printf("Warning: 'open' with 'O_RDWR | O_NOCTTY'\n");
 #endif
-    printf("Warning: check the flag of 'open' when UART has not reaction, try a/d 'O_NDELAY'\n");
+    //printf("Warning: check the flag of 'open' when UART has not reaction, try a/d 'O_NDELAY'\n");
 
     if (-1 == fd)
     {
@@ -82,7 +83,7 @@ int serial_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int pari
         perror("SetupSerial");
         return(-1);
     }
-    app_dbg("Using speed %d\n", speed);
+    //app_dbg("Using speed %d\n", speed);
 
     //set buater rate
     for ( i= 0;  i < sizeof(speed_arr) / sizeof(int);  i++)
@@ -91,7 +92,7 @@ int serial_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int pari
         {
             cfsetispeed(&options, speed_arr[i]);
             cfsetospeed(&options, speed_arr[i]);
-            app_dbg("Seting speed %d\n", speed);
+            //app_dbg("Seting speed %d\n", speed);
         }
     }
 
@@ -238,18 +239,20 @@ int serial_set(int fd,int speed,int flow_ctrl,int databits,int stopbits,int pari
 int serial_send(int fd, unsigned char *send_buf,int data_len)
 {
     int len = 0;
-    int i;
 
     len = write(fd,send_buf,data_len);
 
     if (len == data_len )
     {
+#if 0
         app_dbg("serial send Data len = %d\n",len);
+        int i;
         for(i = 0; i< len; i++)
         {
             depri("0x%02x ", send_buf[i]);
         }
         depri("\n");
+#endif
 
         return len;
     }
@@ -263,7 +266,6 @@ int serial_send(int fd, unsigned char *send_buf,int data_len)
 int serial_recv(int fd, unsigned char *rcv_buf,int data_len, int timeout_s, int timeout_us)
 {
     int len, fs_sel;
-    int i;
     fd_set fs_read;
     struct timeval time;
 
@@ -295,12 +297,15 @@ int serial_recv(int fd, unsigned char *rcv_buf,int data_len, int timeout_s, int 
     {
         len = read(fd, rcv_buf,data_len);
 
+#if 0
         app_dbg("serial receive data len = %d, fs_sel = %d\n",len,fs_sel);
+        int i;
         for(i = 0; i < len; i++)
         {
             depri("0x%02x ", rcv_buf[i]);
         }
         depri("\n");
+#endif
 
         return len;
     }
