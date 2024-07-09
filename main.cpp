@@ -5,6 +5,7 @@ extern "C"{
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "os.h"
 #include "imu_300_vg.h"
 #ifdef __cplusplus
 }
@@ -113,12 +114,17 @@ void test_cmd_format(void)
 
 int main(int argc, char * argv[])
 {
+#if 0
     int speed = 9600;
+#else
+    int speed = 115200;
+#endif
 
     if(argc >= 3)
     {
         speed = atoi(argv[2]);
     }
+    printf("Try using btrate %d\n", speed);
     if(argc != 0)
     {
         return exec_imx300_vg(argv[1], speed);

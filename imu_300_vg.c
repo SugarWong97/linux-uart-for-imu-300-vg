@@ -4,7 +4,10 @@ extern "C"{
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <termios.h>
+#include <unistd.h>
 
+#include "os.h"
 #include "imu_300_vg.h"
 #include "uart.h"
 
@@ -217,6 +220,7 @@ int imx300_vg_cmd_send_and_recv(int uart_fd,
     // 1. 发送请求
     send_len = _gen_imx300_vg_cmd(send_buff, sizeof(send_buff), send_cmd_code, send_data, send_data_len);
     serial_send(uart_fd, send_buff, send_len);
+    msleep(1);
 
     // 2. 查看是否有数据返回
     recv_len = serial_recv(uart_fd, recv_buff, sizeof(recv_buff), timeout_s, timeout_us);
@@ -288,7 +292,7 @@ static unsigned char brate_to_cmd_value(int speed)
     return RECV_DATA_VALUE_ERR;
 }
 
-// 设置波特率(前提是需要知道老的波特率是多少)
+// 设置波特率(前提是需要老的波特率上正常通信)
 // 设置通讯速率
 // 发送命令： 77 05 xx 0B 02 yy
 // 应答命令:  77 05 xx 8b 00 yy
@@ -296,39 +300,36 @@ int imx300_vg_change_brate(char * uart_dev_path, int uart_fd, int new_speed)
 {
     int new_uart_fd = -1;
     unsigned char brate_value;
-    unsigned char recv_payload[6] = {0};
-    int recv_payload_len;
+    unsigned char recv_payload[128] = {0};
 
     brate_value = brate_to_cmd_value(new_speed);
     if(brate_value == RECV_DATA_VALUE_ERR)
     {
-        goto err;
+        return -1;
     }
-    // 1. 发送 设置波特率的请求
-    recv_payload_len = imx300_vg_cmd_send_and_recv(uart_fd,
+    // 每次变更通讯波特率成功之后，会以原波特率发送回应答命令，
+    imx300_vg_cmd_send_and_recv(uart_fd,
             CMD_SEND_SET_BTRATE, &brate_value, 1,
             CMD_RECV_SET_BTRATE, recv_payload, sizeof(recv_payload));
-    if(recv_payload_len <= 0)
-    {
-        goto err;
-    }
-    // 2. 判断返回值是否成功
-    if(recv_payload[0] == RECV_DATA_VALUE_ERR)
-    {
-        goto err;
-    }
+
+    serial_recv(uart_fd, recv_payload, sizeof(recv_payload), 2, 0);
+    tcflush(uart_fd, TCIOFLUSH);
+    msleep(500); //必须在open和tcflush（或ioctl）操作间进行延时操作（具体时间未做验证），否则没有清空效果，原因未知，可能跟Linux内核版本有关
     close(uart_fd);
 
+    // 然后立即改变设备通信波特率。
+    // 备注：如果需要高频输出，请将波特率设为 115200 或者 460800，修改波特率不需要发送保存命令，立即生效。
     new_uart_fd = serial_init(uart_dev_path, new_speed);
     if(new_uart_fd < 0)
     {
-        goto err;
+        return -1;
     }
+    serial_recv(new_uart_fd, recv_payload, sizeof(recv_payload), 2, 0);
+    tcflush(uart_fd, TCIOFLUSH);
+    msleep(500); //必须在open和tcflush（或ioctl）操作间进行延时操作（具体时间未做验证），否则没有清空效果，原因未知，可能跟Linux内核版本有关
+    printf("Using BTRATE! %d\n", new_speed);
 
     return new_uart_fd;
-
-err:
-    return -1;
 }
 
 // 设置模块地址（需要提前知道正确的地址）
@@ -698,12 +699,13 @@ int imx300_vg_uart_probe(char * uart_dev_path, int speed)
             close(uart_fd);
             continue;
         }
+        speed_cur = speeds[i];
         printf("Using BTRATE %d\n", speeds[i]);
         break;
     }
-    if(speed_cur != -1)
+    if(speed_cur != -1 && speed_cur != speed)
     {
-        //uart_fd = imx300_vg_change_brate(uart_dev_path, uart_fd, speed);
+        uart_fd = imx300_vg_change_brate(uart_dev_path, uart_fd, speed);
     }
 
     return uart_fd;
