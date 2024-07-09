@@ -42,9 +42,6 @@ int exec_imx300_vg(char * uart_dev_path, int speed)
     //    printf("0x%02x, ", recv_payload[i]);
     //}
 
-    unsigned char recv_payload[64] = {0};
-    int recv_payload_len;
-    int i;
     // 自动输出： 角度、加速度、角速度、四元数
     ret = imx300_vg_set_auto_output_type(uart_fd, AUTO_OUTPUT_TYPE_05);
     if(ret != 0)
@@ -57,16 +54,14 @@ int exec_imx300_vg(char * uart_dev_path, int speed)
     while(1)//for(i = 0 ; i < 100; i++)
     {
         //recv_payload_len = imx300_vg_read_all_data(uart_fd, recv_payload, sizeof(recv_payload));
-        recv_payload_len = imx300_vg_read_all_data_to_frame(uart_fd, recv_payload, sizeof(recv_payload));
-        //printf("Recv [%d] : ", recv_payload_len);
-        //for(i = 0; i < recv_payload_len; i++)
-        //{
-        //    //printf("DATA [%d] is [%02x]\n", i, recv_payload[i]);
-        //    printf("0x%02x, ", recv_payload[i]);
-        //}
-        imx300_vg_cal_recv_data(recv_payload, &vg_data);
+        ret = imx300_vg_read_all_datas(uart_fd, &vg_data);
+        if(ret != 0)
+        {
+            printf("请求数据失败\n");
+        }
         printf("\n");
         printf("\n");
+        msleep(500);
     }
 
 #if 0

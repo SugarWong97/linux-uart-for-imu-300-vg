@@ -620,14 +620,16 @@ err:
     return -1;
 }
 
-int imx300_vg_read_all_data_to_frame(int uart_fd, unsigned char *recv_buff, int max_payload_len)
+int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data)
 {
     unsigned char recv_len;
     unsigned char send_cmd_code = CMD_SEND_READ_ALL_DATA;
     unsigned char recv_cmd_code = CMD_RECV_READ_ALL_DATA;
 
     unsigned char send_buff[64], send_len;
+    unsigned char recv_buff[64] = {0};
 
+    int i;
     int timeout_s = 1;
     int timeout_us = 5000;
 
@@ -641,11 +643,16 @@ int imx300_vg_read_all_data_to_frame(int uart_fd, unsigned char *recv_buff, int 
     serial_send(uart_fd, send_buff, send_len);
 
     // 2. 查看是否有数据返回
-    recv_len = serial_recv(uart_fd, recv_buff, max_payload_len, timeout_s, timeout_us);
+    recv_len = serial_recv(uart_fd, recv_buff, sizeof(recv_buff), timeout_s, timeout_us);
 
     if (recv_len <= 0)
     {
         goto err;
+    }
+    for(i = 0; i < recv_len; i++)
+    {
+        //printf("DATA [%d] is [%02x]\n", i, recv_payload[i]);
+        printf("0x%02x, ", recv_buff[i]);
     }
 
     // 3. 验证返回的数据对不对
@@ -654,7 +661,9 @@ int imx300_vg_read_all_data_to_frame(int uart_fd, unsigned char *recv_buff, int 
         goto err;
     }
 
-    return recv_len;
+    imx300_vg_cal_recv_data(recv_buff, p_vg_data);
+
+    return 0;
 
 err:
     return -1;
