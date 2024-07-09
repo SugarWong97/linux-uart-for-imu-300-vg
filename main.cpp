@@ -18,6 +18,7 @@ int exec_imx300_vg(char * uart_dev_path, int speed)
     int uart_fd;
     int ret;
 
+
     if(uart_dev_path != NULL)
     {
         uart_fd = imx300_vg_uart_probe(uart_dev_path, speed);
@@ -32,15 +33,11 @@ int exec_imx300_vg(char * uart_dev_path, int speed)
         return -1;
     }
 
-    //unsigned char recv_payload[32] = {0};
-    //int recv_payload_len;
-    //int i;
-    //recv_payload_len = imx300_vg_get_g_value(uart_fd, recv_payload, sizeof(recv_payload));
-    //for(i = 0; i < recv_payload_len; i++)
-    //{
-    //    //printf("DATA [%d] is [%02x]\n", i, recv_payload[i]);
-    //    printf("0x%02x, ", recv_payload[i]);
-    //}
+    ret = imx300_vg_set_output_mode(uart_fd, OUTPUT_MODE_0HZ_CS);
+    if(ret != 0)
+    {
+        printf("设置自动输出失败\n");
+    }
 
     // 自动输出： 角度、加速度、角速度、四元数
     ret = imx300_vg_set_auto_output_type(uart_fd, AUTO_OUTPUT_TYPE_05);
@@ -64,47 +61,7 @@ int exec_imx300_vg(char * uart_dev_path, int speed)
         msleep(500);
     }
 
-#if 0
-    unsigned char recv_buff[48], recv_len;
-
-    // 自动输出： 角度、加速度、角速度、四元数
-    ret = imx300_vg_set_auto_output_type(uart_fd, AUTO_OUTPUT_TYPE_05);
-    if(ret != 0)
-    {
-        printf("设置自动输出失败\n");
-    }
-    ret = imx300_vg_set_output_mode(uart_fd, OUTPUT_MODE_5HZ);
-    if(ret != 0)
-    {
-        printf("设置自动输出失败\n");
-    }
-    // 接收自动数据
-    //while(1)
-    for(int i = 0 ; i < 10; i++)
-    {
-        recv_len = serial_recv(uart_fd, recv_buff, sizeof(recv_buff), timeout_s, timeout_us);
-        cal_recv_data(recv_buff);
-    }
-    ret = imx300_vg_set_output_mode(uart_fd, OUTPUT_MODE_0HZ_CS);
-#endif
-
     return 0;
-}
-
-void test_cmd_format(void)
-{
-#if 0
-    unsigned char test_cmd_get_addr[] = {0x77, 0x04, 0x00, 0x1F, 0x23};
-    unsigned char test_cmd_set_brate[] = {0x77, 0x05, 0x00, 0x0b, 0x02, 0x12};
-
-    _check_imx300_vg_cmd(test_cmd_get_addr);
-    _check_imx300_vg_cmd(test_cmd_set_brate);
-
-    unsigned char gen_buff[128] = {0};
-    unsigned char data = 0x02;
-    _gen_imx300_vg_cmd(gen_buff, sizeof(gen_buff), 0x0b, &data, 1);
-    _check_imx300_vg_cmd(gen_buff);
-#endif
 }
 
 int main(int argc, char * argv[])

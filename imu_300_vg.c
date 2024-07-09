@@ -592,6 +592,33 @@ err:
     return -1;
 }
 
+#if 0
+int imx300_vg_get_roll(int uart_fd)
+{
+    unsigned char recv_payload[32] = {0};
+    int recv_payload_len;
+
+    recv_payload_len = imx300_vg_cmd_send_and_recv(uart_fd,
+            0x04, NULL,   0,
+            0x84, recv_payload, sizeof(recv_payload));
+    if(recv_payload_len <= 0)
+    {
+        goto err;
+    }
+    for(int i = 0; i < recv_payload_len; i++)
+    {
+        //printf("DATA [%d] is [%02x]\n", i, recv_payload[i]);
+        printf("0x%02x, ", recv_payload[i]);
+    }
+    printf("\n");
+
+    return 0;
+
+err:
+    return -1;
+}
+#endif
+
 int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data)
 {
     unsigned char recv_len;
@@ -640,6 +667,22 @@ int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data)
 
 err:
     return -1;
+}
+
+void test_cmd_format(void)
+{
+#if 0
+    unsigned char test_cmd_get_addr[] = {0x77, 0x04, 0x00, 0x1F, 0x23};
+    unsigned char test_cmd_set_brate[] = {0x77, 0x05, 0x00, 0x0b, 0x02, 0x12};
+
+    _check_imx300_vg_cmd(test_cmd_get_addr);
+    _check_imx300_vg_cmd(test_cmd_set_brate);
+
+    unsigned char gen_buff[128] = {0};
+    unsigned char data = 0x02;
+    _gen_imx300_vg_cmd(gen_buff, sizeof(gen_buff), 0x0b, &data, 1);
+    _check_imx300_vg_cmd(gen_buff);
+#endif
 }
 
 

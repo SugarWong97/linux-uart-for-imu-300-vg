@@ -127,6 +127,7 @@ struct imu300_vg_data
 
 int imx300_vg_uart_probe(char * uart_dev_path, int speed);
 int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data);
+//int imx300_vg_get_roll(int uart_fd);
 int imx300_vg_cal_recv_data(unsigned char * buffer, struct imu300_vg_data *vg_data);
 int imx300_vg_do_gyroscope_calib(int uart_fd);
 int imx300_vg_set_output_mode(int uart_fd, enum output_mode mode);
