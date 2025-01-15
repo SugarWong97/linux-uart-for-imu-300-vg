@@ -619,6 +619,9 @@ err:
 }
 #endif
 
+void get_current_date_time(void);
+
+
 int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data)
 {
     unsigned char recv_len;
@@ -628,7 +631,6 @@ int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data)
     unsigned char send_buff[64], send_len;
     unsigned char recv_buff[64] = {0};
 
-    int i;
     int timeout_s = 1;
     int timeout_us = 5000;
 
@@ -648,12 +650,14 @@ int imx300_vg_read_all_datas(int uart_fd, struct imu300_vg_data *p_vg_data)
     {
         goto err;
     }
-    for(i = 0; i < recv_len; i++)
-    {
-        //printf("DATA [%d] is [%02x]\n", i, recv_payload[i]);
-        printf("0x%02x, ", recv_buff[i]);
-    }
-    printf("\n");
+    get_current_date_time();
+    ////dump_recv_datas(recv_buff, recv_len);
+    //for(int i = 0; i < recv_len; i++)
+    //{
+    //    //printf("DATA [%d] is [%02x]\n", i, recv_payload[i]);
+    //    printf("0x%02x, ", recv_buff[i]);
+    //}
+    //printf("\n");
 
     // 3. 验证返回的数据对不对
     if(_check_imx300_vg_cmd(recv_buff, recv_cmd_code) != 0)
@@ -725,7 +729,7 @@ int imx300_vg_uart_probe(char * uart_dev_path, int speed)
             continue;
         }
         speed_cur = speeds[i];
-        printf("Using BTRATE %d\n", speeds[i]);
+        printf("Using BTRATE %d\n", speed_cur);
         break;
     }
     if(speed_cur != -1 && speed_cur != speed)
@@ -764,7 +768,7 @@ int imx300_vg_cal_recv_data(unsigned char * buffer, struct imu300_vg_data *vg_da
     //hexstr[96] = '\0';
     //msmeset(hexstr, 0, sizeof(a));
     to_hex_str(buffer, 48, hexstr);
-    printf("To hex [%s]\n ", hexstr);
+    //printf("To hex [%s]\n ", hexstr);
 
     //rpy
     double yaw;
@@ -865,7 +869,7 @@ int imx300_vg_cal_recv_data(unsigned char * buffer, struct imu300_vg_data *vg_da
         vg_data->q2 = q2;
         vg_data->q3 = q3;
         vg_data->q4 = q4;
-        printf("\n-----\n");
+        //printf("\n-----\n");
         printf("Yaw : %f \n", yaw);
         printf("Pitch : %f\n", pitch);
         printf("Roll : %f\n", roll);
@@ -882,7 +886,6 @@ int imx300_vg_cal_recv_data(unsigned char * buffer, struct imu300_vg_data *vg_da
         printf("Q2 : %f\n", q2);
         printf("Q3 : %f\n", q3);
         printf("Q4 : %f\n", q4);
-        printf("-----\n");
     }
 
     return 0;
