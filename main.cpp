@@ -11,10 +11,11 @@ extern "C"{
 }
 #endif
 
+int delay = 33;
 
 int exec_imx300_vg(char * uart_dev_path, int speed)
 {
-    char uart_path_defalut [32] = "/dev/ttyS6";
+    char uart_path_defalut [32] = "/dev/ttyAMA3";
     int uart_fd;
     int ret;
 
@@ -56,9 +57,7 @@ int exec_imx300_vg(char * uart_dev_path, int speed)
         {
             printf("请求数据失败\n");
         }
-        printf("\n");
-        printf("\n");
-        msleep(500);
+        msleep(delay);
     }
 
     return 0;
@@ -76,7 +75,11 @@ int main(int argc, char * argv[])
     {
         speed = atoi(argv[2]);
     }
-    printf("Try using btrate %d\n", speed);
+    if(argc >= 4)
+    {
+        delay = atoi(argv[3]);
+    }
+    printf("Try using btrate %d, with delay %d\n", speed, delay);
     if(argc != 0)
     {
         return exec_imx300_vg(argv[1], speed);
